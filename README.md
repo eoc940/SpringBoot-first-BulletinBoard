@@ -62,6 +62,15 @@ TDD와 달리 테스트 코드를 꼭 먼저 작성해야 하는 것도 아니�
 - 단위 테스트는 기능에 대한 불확실성을 감소시킬 수 있다.
 - 단위 테스트는 시스템에 대한 실제 문서를 제공한다. 즉 단위 테스트 자체가 문서로 사용될 수 있음.
 
+롬복
+- 자바 개발자들의 필수 라이브러리이며 Getter, Setter, 기본생성자, toString 등을 어노테이션으로 자동생성해줌
+- 1. build.gradle에 compile('org.projectlombok:lombok') 을 추가한다.
+2. ctrl shift a 에서 plugins로 들어가 lombok 버튼을 클릭하여 설치한다.
+3. 인텔리제이를 재시작하고 나서 setting > build > compiler > annotation processors 들어간 후
+enable annotation processing을 체크한다.
+4. (참고) 롬복은 프로젝트마다 설정해야 한다. 플러그인 설치는 한 번만 하면 되지만, build.gradle에
+라이브러리를 추가하는 것과 Enable annotation processing를 체크하는 것은 프로젝트마다 진행해야 한다. 
+
 
 클래스
 
@@ -94,6 +103,25 @@ HelloControllerTest 클래스
 - andExpect(content().string(hello)) -> mvc.perform의 결과를 검증한다. 응답 본문의 내용을 검증한다.
 Controller에서 "hello"를 리턴하기 때문에 이 값이 맞는지 검증합니다.
 
+HelloResponseDto 클래스
+- @Getter -> 선언된 모든 필드의 get메서드를 생성해 준다
+- @RequiredArgsConstructor -> 선언된 모든 final 필드가 포함된 생성자를 생성한다
+final이 없는 필드는 생성자에 포함되지 않는다.
+
+HelloResponseDtoTest 클래스
+- assertThat -> assertj라는 테스트 검증 라이브러리의 검증 메서드이다. 검증하고 싶은 대상을 메서드 인자로 받는다.
+메서드 체이닝이 지원되어 isEqualTo와 같이 메서드를 이어서 사용할 수 있다.
+-isEqualTo -> assertj의 동등 비교 메서드이다. assertThat에 있는 값과 isEqualTo의 값을 비교해서 같을 때만 성공.
+여기서 JUnit의 기본 assertThat이 아닌 assertj의 assertThat을 사용했다. assertj 역시 JUnit에서 자동으로
+라이브러리 등록을 해준다. JUnit과 비교하여 assertj의 장점은 다음과 같다.
+1. CoreMatchers와 달리 추가적으로 라이브러리가 필요하지 않다. -> JUnit의 assertThat을 쓰게 되면 is()와 같이
+CoreMatchers 라이브러리가 필요하다.
+2. 자동완성이 좀 더 확실하게 지원된다 -> IDE 에서는 CoreMatchers와 같은 Matcher 라이브러리의 자동완성 지원이 약하다.
+- 만약 테스트가 실패한다면 그레이들 버전확인이 필요하다. 위 프로젝트는 현업에서 아직 많이 사용중인 그레이들 4로 진행되었다.
+테스트 실패 원인과 해결 방법은 (http://bit.ly/382Q7d7) 에서 확인 가능하며 터미널에 
+gradlew wrapper --gradle-version 4.10.2 을 입력하여 버전을 내려도 된다.
+
+
 
 
 
@@ -125,6 +153,7 @@ API가 RESTful로 간주되려면 다음 기준을 따라야 함
 
 이와 대조적으로 REST는 필요에 따라 구현할 수 있는 일련의 지침으로, 이를 통해 REST API는 더 빨라지고 경량화되며 사물인터넷(Iot) 및 모바일 앱 개발에 가장 적합한 API가 된다
 
-참조 : [https://www.redhat.com/ko/topics/api/what-is-a-rest-api]
-[스프링 부트와 AWS로 혼자 구현하는 웹 서비스 저자:이동욱]
+참조 
+- [https://www.redhat.com/ko/topics/api/what-is-a-rest-api]
+- [스프링 부트와 AWS로 혼자 구현하는 웹 서비스 저자:이동욱]
 

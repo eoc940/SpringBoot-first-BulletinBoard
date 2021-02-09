@@ -1,4 +1,4 @@
-package com.eoc940.springboot;
+package com.eoc940.springboot.web;
 
 import com.eoc940.springboot.web.HelloController;
 import org.junit.Test;
