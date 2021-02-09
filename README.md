@@ -74,4 +74,6 @@ API가 RESTful로 간주되려면 다음 기준을 따라야 함
 
 이와 대조적으로 REST는 필요에 따라 구현할 수 있는 일련의 지침으로, 이를 통해 REST API는 더 빨라지고 경량화되며 사물인터넷(Iot) 및 모바일 앱 개발에 가장 적합한 API가 된다
 
-참조 : https://www.redhat.com/ko/topics/api/what-is-a-rest-api
+참조 : [https://www.redhat.com/ko/topics/api/what-is-a-rest-api]
+[스프링 부트와 AWS로 혼자 구현하는 웹 서비스 저자:이동욱]
+
