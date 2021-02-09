@@ -63,6 +63,40 @@ TDD와 달리 테스트 코드를 꼭 먼저 작성해야 하는 것도 아니�
 - 단위 테스트는 시스템에 대한 실제 문서를 제공한다. 즉 단위 테스트 자체가 문서로 사용될 수 있음.
 
 
+클래스
+
+Application 클래스
+- @SpringBootApplication -> 스프링 부트의 자동 설정, 스프링 Bean 읽기와 생성을 모두 자동으로 설정
+특히나 @SpringBootApplication이 있는 위치부터 설정을 읽어가기 때문에 이 클래스는 항상 프로젝트 최상단에 위치해야 함
+- main 메서드에서 실행하는 SpringApplication.run으로 인해 내장 WAS를 실행한다. 내장 WAS가 있으면 외부 톰캣을 설치할 필요가 없고,
+스프링 부트로 만들어진 Jar파일(실행 가능한 java 패키징 파일)로 실행하면 된다. 스프링 부트에서는 언제 어디서나 같은 환경에서 
+스프링 부트를 배포하기 위하여 내장 WAS를 사용하는 것을 권장함.
+
+HelloController 클래스
+- @RestController -> 컨트롤러를 JSON을 반환하는 컨트롤러로 만들어 준다. 예전에는 @ResponseBody를 각 메서드마다 선언했던 것을
+한번에 사용할 수 있게 해준다고 생각하면 됨.
+- @GetMapping -> HTTP Method인 Get의 요청을 받을 수 있는 API를 만들어 준다. 예전에는 @RequestMapping(method = RequestMethod.GET)
+으로 사용되었습니다. 이제 이 프로젝트는 /hello로 요청이 오면 문자열 hello를 반환하는 기능을 가짐.
+
+HelloControllerTest 클래스
+- @RunWith(SpringRunner.class) -> 테스트를 진행할 때 JUnit에 내장된 실행자 외에 다른 실행자를 실행시킨다.
+여기서는 SpringRunner라는 스프링 실행자를 사용한다. 즉 스프링 부트 테스트와 JUnit 사이에 연결자 역할을 한다.
+- @WebMvcTest -> 여러 스프링 어노테이션 중, Web(Spring MVC)에 집중할 수 있는 어노테이션이다.
+선언할 경우 @Controller, @ControllerAdvice 등을 사용할 수 있지만, @Service, @Component, @Repository 등은 사용불가.
+여기서는 컨트롤러만 사용하기 때문에 선언함.
+- @Autowired -> 스프링이 관리하는 빈(Bean)을 주입 받습니다.
+- private MockMvc mvc -> 웹 API를 테스트할 때 사용한다. 스프링 MVC 테스트의 시작점이다. 
+이 클래스를 통해 HTTP GET, POST 등에 대한 API 테스트를 할 수 있습니다.
+- mvc.perform(get("/hello")) -> MockMvc를 통해 /hello 주소로 HTTP GET 요청을 한다.
+체이닝이 지원되어 아래와 같이 여러 검증 기능을 이어서 선언할 수 있습니다.
+- andExpect(status().isOk()) -> mvc.perform 의 결과를 검증한다. HTTP Header의 Status를 검증한다.
+우리가 흔히 알고 있는 200, 404, 500 등의 상태를 검증합니다. 여기서는 Ok 즉, 200인지 아닌지를 검증합니다.
+- andExpect(content().string(hello)) -> mvc.perform의 결과를 검증한다. 응답 본문의 내용을 검증한다.
+Controller에서 "hello"를 리턴하기 때문에 이 값이 맞는지 검증합니다.
+
+
+
+
 정보
 
 REST API
