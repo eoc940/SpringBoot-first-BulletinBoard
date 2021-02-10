@@ -86,6 +86,8 @@ HelloController 클래스
 한번에 사용할 수 있게 해준다고 생각하면 됨.
 - @GetMapping -> HTTP Method인 Get의 요청을 받을 수 있는 API를 만들어 준다. 예전에는 @RequestMapping(method = RequestMethod.GET)
 으로 사용되었습니다. 이제 이 프로젝트는 /hello로 요청이 오면 문자열 hello를 반환하는 기능을 가짐.
+- @RequestParam -> 외부에서 API로 넘긴 파라미터를 가져오는 어노테이션입니다. 여기서는 외부에서 
+name(@RequestParam("name")) 이란 이름으로 넘긴 파라미터를 메서드 파라미터 name(String name)에 저장하게 된다.
 
 HelloControllerTest 클래스
 - @RunWith(SpringRunner.class) -> 테스트를 진행할 때 JUnit에 내장된 실행자 외에 다른 실행자를 실행시킨다.
@@ -102,6 +104,10 @@ HelloControllerTest 클래스
 우리가 흔히 알고 있는 200, 404, 500 등의 상태를 검증합니다. 여기서는 Ok 즉, 200인지 아닌지를 검증합니다.
 - andExpect(content().string(hello)) -> mvc.perform의 결과를 검증한다. 응답 본문의 내용을 검증한다.
 Controller에서 "hello"를 리턴하기 때문에 이 값이 맞는지 검증합니다.
+- param -> API 테스트할 때 사용될 요청 파라미터를 설정한다. 단 값은 String만 허용한다(그래서 String.valueOf사용). 
+그래서 숫자/날짜 등의 데이터도 등록할 때는 문자열로 변경해야 가능하다.
+- jsonPath -> JSON 응답값을 필드별로 검증할 수 있는 메서드이다. $를 기준으로 필드명을 명시한다.
+여기서는 name과 amount를 검증하니 $.name, $.amount로 검증한다.
 
 HelloResponseDto 클래스
 - @Getter -> 선언된 모든 필드의 get메서드를 생성해 준다
