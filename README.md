@@ -244,6 +244,25 @@ getter/setter 를 무작정 생성하는 경우가 있다. 이렇게 되면 해�
 여기서는 생성자 대신 @Builder를 통해 제공되는 빌더 클래스를 사용한다. 생성자나 빌더나 생성 시점에 값을 채워주는 역할은
 똑같다. 다만 생성자의 경우 지금 채워야 할 필드가 무엇인지 명확히 지정할 수가 없다. 빌더 패턴을 잘 익혀놓으면 좋다.
 
+PostsRepository 인터페이스
+보통 MyBatis 에서 Dao라고 불리는 DB Layer 접근자이다. Jpa에선 Repository라고 부르며 인터페이스로 생성한다.
+단순히 인터페이스를 생성 후, JpaRepository<Entity 클래스, PK 타입>를 상속하면 기본적인 CRUD 메서드가 자동으로
+생성된다. 나중에 프로젝트 규모가 커져 도메인별로 프로젝트를 분리해야 한다면 이때 Entity 클래스와 기본 Repository는
+함께 움직여야 하므로 도메인 패키지에서 함께 관리합니다.
+
+PostsRepositoryTest 클래스
+- @After -> JUnit에서 단위 테스트가 끝날 때마다 수행되는 메서드를 지정
+보통은 배포 전 젠체 테스트를 수행할 때 테스트간 데이터 침범을 막기 위해 사용한다.
+여러 테스트가 동시에 수행되면 테스트용 데이터베이스인 H2에 데이터가 그대로 남아 있어 다음 테스트 실행 시 테스트가 실패할
+수 있다.
+- postsRepository.save -> 테이블 posts에 insert/update 쿼리를 실행한다. id값이 없다면 insert, 있다면
+update 쿼리가 실행된다.
+- postsRepository.findAll -> 테이블 posts에 있는 모든 데이터를 조회해오는 메서드입니다.
+
+별다른 설정 없이 @SpringBootTest를 사용할 경우 H2 데이터베이스를 자동으로 실행해 준다.
+
+
+
 
 참조 
 - [https://www.redhat.com/ko/topics/api/what-is-a-rest-api]
