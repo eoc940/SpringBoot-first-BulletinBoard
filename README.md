@@ -145,6 +145,43 @@ save(), findAll(), findOne() 등을 인터페이스로 갖고 있다. 그러다 
 JPA를 잘 쓰려면 객체지향 프로그래밍과 관계형 데이터베이스를 둘 다 이해해야 한다. JPA를 사용하면 CRUD 쿼리를
 직접 작성할 필요가 없고, 속도에 관해서는 JPA를 잘 활용하면 네이티브 쿼리만큼의 퍼포먼스를 낼 수 있다.
 
+등록/수정/조회 API 만들기
+API를 만들기 위해 총 3개의 클래스가 필요하다.
+1. Request 데이터를 받을 Dto
+2. API 요청을 받을 Controller
+3. 트랜잭션, 도메인 기능 간의 순서를 보장하는 Service
+여기서 많은 사람들이 오해하는 것이, Service에서 비즈니스 로직을 처리해야 한다는 것이다. 하지만 전혀 그렇지 않다.
+Service는 트랜잭션, 도메인 간 순서 보장의 역할만 한다.
+
+Web Layer
+- 흔히 사용하는 컨트롤러(@Controller)와 JSP/Freemarker등의 뷰 템플릿 영역이다.
+- 이외에도 필터(@Filter), 인터셉터, 컨트롤러 어드바이스(@ControllerAdvice) 등 외부 요청과 응답에 대한 
+전반적인 영역을 이야기합니다.
+
+Service Layer
+- @Service에 사용되는 서비스 영역이다.
+- 일반적으로 Controller와 Dao의 중간 영역에서 사용된다
+- @Transactional이 사용되어야 하는 영역이기도 합니다.
+
+Repository Layer
+- Database와 같이 데이터 저장소에 접근하는 영역이다.
+- 기존에 개발하셨던 분들이라면 Dao(data access object) 영역으로 이해하면 쉽다.
+
+Dtos
+- Dto(data transfer object)는 계층 간에 데이터 교환을 위한 객체를 이야기하며 Dtos는 이들의 영역을 이야기한다.
+- 예를 들어 뷰 템플릿 엔진에서 사용될 객체나 Repository Layer에서 결과로 넘겨준 객체 등이 이들을 이야기한다.
+
+Domain Model
+- 도메인이라 불리는 개발 대상을 모든 사람이 동일한 관점에서 이해할 수 있고 공유할 수 있도록 단순화시킨 것을 도메인 모델이라고 한다.
+- 이를테면 택시 앱이라고 하면 배차, 탑승, 요금 등이 모두 도메인이 될 수 있다.
+- @Entity를 사용해본 사람은 @Entity가 사용된 영역 역시 도메인 모델이라고 이해하면 된다.
+- 다만, 무조건 데이터베이스의 테이블과 관계가 있어야만 하는 것은 아니다.
+- VO처럼 값 객체들도 이 영역에 해당하기 때문이다.
+
+이 5가지 레이어에서 비즈니스 처리를 담당하는 곳이 바로 Domain 레이어이다.
+(참고) 기존에 서비스로 처리하던 방식을 트랜잭션 스크립트라고 함.
+
+
 
 
 클래스
@@ -268,10 +305,42 @@ sql 쿼리를 확인할 수 있다. 직접 확인해보면 create table 쿼리�
 MySQL 쿼리를 수행해도 정상적으로 작동하기 때문에 이후 디버깅을 위해 출력되는 쿼릴 로그를 MySQL 버전으로 변경해 보겠다.
 applicaiton.properties에 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
 
+PostsApiController 클래스
+- @RequestBody란 클라이언트가 전송하는 Http 요청의 Body 내용을 java object로 변환시켜주는 역할을 한다.
+그래서 Body가 존재하지 않는 Get 방식의 메서드에 @RequestBody를 활용하는 것은 적합하지 않으므로
+에러가 발생한다. 즉 Post방식으로 Json의 형태로 넘어온 데이터를 객체로 바인딩하기 위해 사용할 수 있다.
 
+PostsService 클래스
+- @Transactional -> 데이터 삽입 프로세스를 진행하던 중 에러가 발생하면 기존에 삽입이 이미 이루어진 데이터들도 다시 롤백이 되어야 한다.
+이러한 점을 감안하여 Spring은 @Transactional 이란 어노테이션을 제공한다. 메서드 앞에 해당 어노테이션을 넣으면
+작업 중에 Exception이 발생하면 해당 작업을 모두 롤백 시키며 Exception을 던져준다.
+또한 해당 Exception마다 롤백 여부 또한 정해줄 수 있다.
+
+스프링에서는 Bean을 주입받는 방식이 @Autowired, setter, 생성자 세 가지이다. 이 중 가장 권장하는 방식이 생성자로 주입받는 방식이다.
+@Autowired는 권장되지 않는다. 생성자를 이용하면 동일한 효과를 볼 수 있다. 바로 @RequiredArgsConstructor에서 해결해 준다.
+final이 선언된 모든 필드를 인자값으로 하는 생성자를 롬복의 @RequiredArgsConstructor가 대신 생성해 준다. 생성자를 직접 안 쓰고
+롬복 어노테이션을 사용한 이유는 해당 클래스의 의존성 관계가 변경될 때마다 생성자 코드를 계속해서 수정하는 번거로움을 해결하기 위함이다.
+
+PostsSaveRequestDto 클래스
+여기서 Entity 클래스와 거의 유사한 형태임에도 Dto클래스를 추가로 생성했다. 하지만, 절대로 Entity 클래스를 Request/Response 클래스로
+사용하면 안된다. Entity 클래스는 데이터베이스와 맞닿은 핵심 클래스이다. Entity 클래스를 기준으로 테이블이 생성되고, 스키마가 변경된다.
+화면 변경은 사소한 기능 변경인데, 이를 위해 테이블과 연결된 Entity 클래스를 변경하는 건 너무 큰 변경이다. 수많은 서비스 클래스나 비즈니스
+로직들이 Entity 클래스를 기준으로 동작한다. Entity클래스가 변경되면 여러 클래스에 영향을 끼치지만 Request와 Response용 Dto는 View를
+위한 클래스라 정말 자주 변경이 필요하다. 
+View Layer, DB Layer의 역할 분리를 철저히 하는 것이 좋다. 실제로 Controller에서 결과값으로 여러 테이블을 조인해서 줘야 할 경우가
+빈번하므로 Entity클래스만으로 표현하기 어려운 경우가 많다. 꼭 Entity 클래스와 Controller에서 쓸 Dto는 분리해서 사용해야 한다.
+
+PostsApiControllerTest 클래스
+Api Controller를 테스트하는데 HelloController와 달리 @WebMvcTest를 사용하지 않았다. @WebMvcTest의 경우 JPA 기능이 작동하지 않기
+때문인데, Controller와 ControllerAdvice 등 외부 연동과 관련된 부분만 활성화되니 지금같이 JPA 기능까지 한번에 테스트할 때는
+@SpringBootTest 와 TestRestTemplate를 사용하면 된다.
+
+
+                    
 
 
 참조 
 - [https://www.redhat.com/ko/topics/api/what-is-a-rest-api]
 - [스프링 부트와 AWS로 혼자 구현하는 웹 서비스 저자:이동욱]
+- [https://inseok9068.github.io/springboot/springboot-transaction/]
 
