@@ -315,6 +315,10 @@ PostsService 클래스
 이러한 점을 감안하여 Spring은 @Transactional 이란 어노테이션을 제공한다. 메서드 앞에 해당 어노테이션을 넣으면
 작업 중에 Exception이 발생하면 해당 작업을 모두 롤백 시키며 Exception을 던져준다.
 또한 해당 Exception마다 롤백 여부 또한 정해줄 수 있다.
+- update 기능에서 데이터베이스에 쿼리를 날리는 부분이 없다. 이게 가능한 이유는 JPA 영속성 때문이다. 영속성 컨텍스트란, 엔티티를 영구 
+저장하는 환경이다. 일종의 논리적 개념이고, JPA의 핵심 내용은 엔티티가 영속성 컨텍스트에 포함되어 있냐 아니냐로 갈린다. 
+
+~~여기부터~~~~
 
 스프링에서는 Bean을 주입받는 방식이 @Autowired, setter, 생성자 세 가지이다. 이 중 가장 권장하는 방식이 생성자로 주입받는 방식이다.
 @Autowired는 권장되지 않는다. 생성자를 이용하면 동일한 효과를 볼 수 있다. 바로 @RequiredArgsConstructor에서 해결해 준다.
@@ -335,6 +339,9 @@ Api Controller를 테스트하는데 HelloController와 달리 @WebMvcTest를 �
 때문인데, Controller와 ControllerAdvice 등 외부 연동과 관련된 부분만 활성화되니 지금같이 JPA 기능까지 한번에 테스트할 때는
 @SpringBootTest 와 TestRestTemplate를 사용하면 된다.
 
+PostsResponseDto 클래스
+PostsResponseDto는 Entity의 필드 중 일부만 사용하므로 생성자로 Entity를 받아 필드에 값을 넣는다. 굳이 모든 필드를 가진 생성자가 필요하진
+않으므로 Dto는 Entit를 받아 처리한다.
 
                     
 
