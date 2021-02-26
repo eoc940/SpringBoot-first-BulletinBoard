@@ -181,6 +181,16 @@ Domain Model
 이 5가지 레이어에서 비즈니스 처리를 담당하는 곳이 바로 Domain 레이어이다.
 (참고) 기존에 서비스로 처리하던 방식을 트랜잭션 스크립트라고 함.
 
+JPA Auditing으로 생성시간/수정시간 자동화하기
+보통 엔티티에는 해당 데이터의 생성시간과 수정시간을 포함한다. 언제 만들어졌는지, 언제 수정되었는지 등은 차후 유지보수에 있어 굉장히 중요한 정보다.
+그렇다 보니 매번 DB에 삽입 하기 전, 갱신 하기 전에 날짜 데이터를 등록/수정하는 코드가 여기저기 들어가게 된다. 이것은 매우 반복적이고
+귀찮은 문제이기 때문에 이 문제를 해결하고자 JPA Auditing을 사용하겠다.
+
+LocalDate 사용
+여기서부터는 날짜 타입을 사용한다. Java8부터 LocalDate와 LocalDateTime이 등장했다. 그간 Java의 기본 날짜 타입인 Date의 문제점을 제대로
+고친 타입이라 Java8일 경우 무조건 써야 한다고 생각하면 된다. LocalDate, LocalDateTime은 스프링 부트 1.x버전을 쓴다면 별도로
+Hibernate 5.2.10 버전 이상을 사용하도록 설정이 필요하지만, 스프링 부트 2.x버전을 사용하면 기본적으로 해당 버전을 사용 중이라 별다른
+설정 없이 바로 적용하면 된다.
 
 
 
@@ -318,7 +328,6 @@ PostsService 클래스
 - update 기능에서 데이터베이스에 쿼리를 날리는 부분이 없다. 이게 가능한 이유는 JPA 영속성 때문이다. 영속성 컨텍스트란, 엔티티를 영구 
 저장하는 환경이다. 일종의 논리적 개념이고, JPA의 핵심 내용은 엔티티가 영속성 컨텍스트에 포함되어 있냐 아니냐로 갈린다. 
 
-~~여기부터~~~~
 
 스프링에서는 Bean을 주입받는 방식이 @Autowired, setter, 생성자 세 가지이다. 이 중 가장 권장하는 방식이 생성자로 주입받는 방식이다.
 @Autowired는 권장되지 않는다. 생성자를 이용하면 동일한 효과를 볼 수 있다. 바로 @RequiredArgsConstructor에서 해결해 준다.
@@ -342,6 +351,15 @@ Api Controller를 테스트하는데 HelloController와 달리 @WebMvcTest를 �
 PostsResponseDto 클래스
 PostsResponseDto는 Entity의 필드 중 일부만 사용하므로 생성자로 Entity를 받아 필드에 값을 넣는다. 굳이 모든 필드를 가진 생성자가 필요하진
 않으므로 Dto는 Entit를 받아 처리한다.
+
+BaseTimeEntity 클래스
+이 클래스는 모든 Entity의 상위 클래스가 되어 Entity들의 createdDate, modifiedDate를 자동으로 관리하는 역할이다.
+- @MappedSuperclass -> JPA Entity 클래스들이 BaseTimeEntity를 상속할 경우 필드들(createdDate, modifiedDate)도 칼럼으로 인식하도록 한다.
+- @EntityListeners(AuditingEntityListener.class) -> BaseTimeEntity 클래스에 Auditing 기능을 포함시킵니다.
+- @CreatedDate -> Entity가 생성되어 저장될 때 시간이 자동 저장된다.
+- @LastModifiedDate -> 조회한 Entity의 값을 변경할 때 시간이 자동 저장된다.
+이 클래스 작성 후, Posts 클래스가 BaseTimeEntity를 상속받도록 변경한다. 그 후 Application 클래스에 활성화 어노테이션을 추가하여
+JPA Auditing 어노테이션을 모두 활성화할 수 있도록 한다.
 
                     
 
