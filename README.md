@@ -353,6 +353,9 @@ PostsRepository 인터페이스
 단순히 인터페이스를 생성 후, JpaRepository<Entity 클래스, PK 타입>를 상속하면 기본적인 CRUD 메서드가 자동으로
 생성된다. 나중에 프로젝트 규모가 커져 도메인별로 프로젝트를 분리해야 한다면 이때 Entity 클래스와 기본 Repository는
 함께 움직여야 하므로 도메인 패키지에서 함께 관리합니다.
+SpringDataJpa에서 제공하지 않는 메서드는 위처럼 쿼리로 작성해도 되는 것을 보여드리고자 @Query를 사용했습니다.
+실제로 앞의 코드는 SpringDataJpa에서 제공하는 기본 메서드만으로 해결할 수 있지만, @Query가 훨씬 가독성이 좋으니
+선택해서 사용하면 된다.(규모가 있는 프로젝트에서는 Querydsl을 쓰자)
 
 PostsRepositoryTest 클래스
 - @After -> JUnit에서 단위 테스트가 끝날 때마다 수행되는 메서드를 지정
@@ -422,6 +425,8 @@ IndexController 클래스
 머스테치 스타터 덕분에 컨트롤러에서 문자열을 반환할 대 앞의 경로와 뒤의 파일 확장자는 자동으로 지정된다. 앞의 경로는 src/main/resources/templates로,
 뒤의 파일 확장자는 .mustache가 붙는 것입니다. 즉 여기선 "index"를 반환하므로, src/main/resources/templates/index.mustache로 전환되어
 view resolver가 처리하게 됩니다. 
+- Model -> 서버 템플릿 엔진에서 사용할 수 있는 객체를 저장할 수 있다. 여기서는 postsService.findAllDesc()로 가져온 결과를 
+posts로 index.mustache에 전달한다.
 
 header.mustache, footer.mustache 
 코드를 보면 css와 js의 위치가 서로 다르다. 페이지 로딩속도를 높이기 위해 css는 header에, js는 footer에 두었다. html은 위에서부터
@@ -441,6 +446,8 @@ index.js
 src="/js/app/index.js" 로 설정하였다. footer.mustache에서 index.js 호출 코드를 보면
 절대경로(/)로 바로 시작한다. 스프링 부트는 기본적으로 src/main/resource/static에 위치한 자바스크립트, css, 이미지 등
 정적 파일들은 url에서 /로 설정된다. 그래서 다음과 같이 파일이 위치하면 위치에 맞게 호출이 가능하다.
+- {{#posts}} -> posts라는 리스트를 순회한다, Java의 for문과 동일하게 생각하면 된다
+- {{id}} 등의 {{변수명}} -> list에서 뽑아낸 객체의 필드를 사용한다.
 
 
 참조 
