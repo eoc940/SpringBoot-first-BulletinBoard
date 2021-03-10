@@ -38,6 +38,8 @@ org.springframework.boot:spring-boot-starter-test를 받도록 선언되어 있�
 dependency 의존성 코드의 경우 특정 버전을 명시하면 안됨. 버전을 명시하지 않아야만 맨 위에 작성한
 org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}의 버전을 따라감.
 - 이렇게 관리할 경우 라이브러리 버전 관리가 한 곳에서 집중되고, 버전 충돌도 해결되어 편하게 개발할 수 있음.
+spring-boot-starter-oauth2-client -> 소셜 로그인 등 클라이언트 입장에서 소셜 기능 구현시 필요한 의존성이다.
+spring-security-oauth2-client와 spring-security-oauth2-jose를 기본으로 관리해준다.
 
 
 깃 연동 방법
@@ -448,6 +450,10 @@ IndexController 클래스
 view resolver가 처리하게 됩니다. 
 - Model -> 서버 템플릿 엔진에서 사용할 수 있는 객체를 저장할 수 있다. 여기서는 postsService.findAllDesc()로 가져온 결과를 
 posts로 index.mustache에 전달한다.
+- (SessionUser) httpSession.getAttribute("user") -> 앞서 작성된 CustomOAuth2UserService에서 로그인 성공 시 세션에
+SessionUser를 저장하도록 구성했다. 즉 로그인 성공 시 httpSession.getAttribute("user")에서 값을 가져올 수 있다.
+- if(user != null) -> 세션에 저장된 값이 있을 때만 model에 userName으로 등록한다. 세션에 저장된 값이 없으면 model엔 
+아무런 값이 없는 상태이니 로그인 버튼이 보이게 된다.
 
 header.mustache, footer.mustache 
 코드를 보면 css와 js의 위치가 서로 다르다. 페이지 로딩속도를 높이기 위해 css는 header에, js는 footer에 두었다. html은 위에서부터
@@ -460,6 +466,16 @@ bootstrap.js가 제이쿼리에 의존한다고 한다. 라이브러리를 비�
 {{>layout/header}} -------> {{> }}는 현재 머스테치 파일(index.mustache)을 기준으로 다른 파일을 가져온다.
 <h1>스프링 부트로 시작하는 웹 서비스</h1>
 {{>layout/footer}}
+
+index.mustache
+- {{#userName}} -> 머스테치는 다른 언어와 같은 if문(if userName != null)을 제공하지 않는다. true/false 여부만 판단한다.
+그래서 머스테치에는 항상 최종값을 넘겨줘야 한다. 여기서도 역시 userName이 있다면 userName을 노출시키도록 구성했다. 
+- a href="/logout" -> 스프링 시큐리티에서 기본적으로 제공하는 로그아웃 URL이다. 즉 개발자가 별도로 저 URL에 해당하는 컨트롤러를
+만들 필요가 없다. SecurityConfig클래스에서 URL을 변경할 순 있지만 기본 URL을 사용해도 충분하니 여기서는 그대로 사용한다.
+- {{^userName}} -> 머스테치에서 해당 값이 존재하지 않는 경우에는 ^를 사용한다. 여기서는 userName이 없다면 로그인 버튼을 
+노출시키도록 구성했다. 
+- a href="/oauth2/authorization/google" -> 스프링 시큐리티에서 기본적으로 제공하는 로그인 URL이다. 로그아웃 URL과 마찬가지로
+개발자가 별도의 컨트롤러를 생성할 필요가 없다.
                     
 index.js
 - window.location.href = '/' -> 글 등록이 성공하면 메인페이지(/)로 이동한다.
@@ -480,6 +496,51 @@ src="/js/app/index.js" 로 설정하였다. footer.mustache에서 index.js 호�
 posts-update.mustache
 - {{post.id}} -> 머스테치는 객체의 필드 접근 시 점으로 구분합니다. 즉 Post 클래스의 id에 대한 접근은 post.id로 사용할 수 있다.
 - readonly -> input태그에 읽기 가능만 허용하는 속성이다. id와 author는 수정할 수 없도록 읽기만 허용하도록 추가한다.
+
+Role
+- @Enumerated(EnumType.STRING) -> JPA로 데이터베이스로 저장할 때 Enum 값을 어떤 형태로 저장할지를 결정한다.
+기본적으로 int로 된 숫자가 저장된다. 숫자로 저장되면 데이터베이스로 확인할 때 그 값이 무슨 코드를 의미하는지 알 수 없다.
+그래서 문자열 (EnumType.STRING)로 저장될 수 있도록 선언한다.
+
+UserRepository
+- findByEmail -> 소셜 로그인으로 반환되는 값 중 email을 통해 이미 생성된 사용자인지 처음 가입하는 사용자인지 판단하기 위한 메서드이다.
+
+SecurityConfig
+- @EnableWebSecurity -> Spring Security 설정들을 활성화시켜 준다
+- csrf().disable().headers().frameOptions().disable() -> h2-console 화면을 사용하기 위해 해당 옵션들은 disable한다
+- authorizeRequests -> URL별 권한 관리를 설정하는 옵션의 시작점이다. ,authorizeRequests가 선언되어야만 antMatchers 옵션을
+사용할 수 있다.
+- antMatchers -> 권한 관리 대상을 지정하는 옵션이다. URL, HTTP 메서드별로 관리가 가능하다. "/"등 지정된 URL들은 permitAll() 옵션을
+통해 전체 열람 권한을 주었다. "/api/v1/**"주소를 가진 API는 USER권한을 가진 사람만 가능하도록 했다.
+- anyRequest -> 설정된 값들 이외 나머지 URL들을 나타낸다. 여기서는 authenticated()을 추가하여 나머지 URL들은 모두 인증된 
+사용자에게만 허용하게 한다. 인증된 사용자 즉, 로그인한 사용자들을 이야기한다.
+- logout().logoutSuccessUrl("/") -> 로그아웃 기능에 대한 여러 설정의 진입점이다. 로그아웃 성공 시 / 주소로 이동한다.
+- oauth2Login -> oauth2Login -> OAuth2 로그인 기능에 대한 여러 설정의 진입점이다.
+- userInfoEndpoint -> OAuth2 로그인 성공 이후 사용자 정보를 가져올 때의 설정들을 담당한다.
+- userService -> 소셜 로그인 성공 시 후속 조치를 진행할 UserService 인터페이스의 구현체를 등록한다. 리소스 서버(즉, 소셜 서비스들)
+에서 사용자 정보를 가져온 상태에서 추가로 진행하고자 하는 기능을 명시할 수 있다.
+
+CustomOAuth2UserService
+- registrationId -> 현재 로그인 진행 중인 서비스를 구분하는 코드이다. 지금은 구글만 사용하는 불필요한 값이지만, 이후 네이버 로그인
+연동 시에 네이버 로그인인지, 구글 로그인인지 구분하기 위해 사용한다.
+- userNameAttributeName -> OAuth2 로그인 진행 시 키가 되는 필드값을 이야기한다. Primary Key와 같은 의미이다. 구글의 경우
+기본적으로 코드를 지원하지만, 네이버 카카오 등은 기본 지원하지 않습니다. 구글의 기본 코드는 "sub"입니다. 이후 네이버 로그인과
+구글 로그인을 동시 지원할 때 사용된다.
+- OAuthAttributes -> OAuth2UserService를 통해 가져온 OAuth2User의 attribute를 담을 클래스이다. 이후 네이버 등 다른 소셜
+로그인도 이 클래스를 사용한다.
+- SessionUser -> 세션에 사용자 정보를 저장하기 위한 Dto 클래스이다. 왜 User 클래스를 쓰지 않고 새로 만들어서 쓰는지 뒤이어서
+상세히 설명하겠다.
+
+OAuthAttributes
+- of() -> OAuth2User에서 반환하는 사용자 정보는 Map이기 때문에 값 하나하나를 변환해야만 한다.
+- toEntity() -> User 엔티티를 생성한다. OAuthAttributes에서 엔티티를 생성하는 시점은 처음 가입할 때이다.
+가입할 때의 기본 권한을 GUEST로 주기 위해서 role 빌더값에는 Role.GUEST를 사용한다. OAuthAttributes 클래스 생성이 끝났으면
+같은 패키지에 SessionUser 클래스를 생성한다.
+
+SessionUser
+SessionUser에는 인증된 사용자 정보만 필요하다. 그 외에 필요한 정보들은 없으니, name, email, picture만 필드로 선언한다.
+
+
 
 참조 
 - [https://www.redhat.com/ko/topics/api/what-is-a-rest-api]
