@@ -273,6 +273,27 @@ resource에 application-oauth.properties파일을 만들고 코드를 등록한�
 이렇게 되면 openid provider인 서비스(구글)와 그렇지 않은 서비스(네이버/카카오 등)로 나눠서 각각 OAuth2Service를 만들어야 한다.
 하나의 OAuth2Service로 사용하기 위해 일부러 openid scope를 빼고 등록한다.
 
+세션 저장소로 데이터베이스 사용하기
+지금 만든 서비스는 애플리케이션을 재실행하면 로그인이 풀린다. 이는 세션이 내장 톰캣의 메모리에 저장되기 때문이다. 기본적으로 세션은
+실행되는 WAS의 메모리에서 저장되고 호출된다. 메모리에 저장되다 보니 내장 톰캣처럼 애플리케이션 실행 시 실행되는 구조엔선 항상 초기화된다.
+즉 배포할 때마다 톰캣이 재시작된다. 한 가지 문제가 더 있는데, 2대 이상의 서버에서 서비스하고 있다면 톰캣마다 세션 동기화 설정을 해야한다.
+그래서 현업에서는 세션 저장소에 대해 다음의 3가지 중 한가지를 선택한다
+1. 톰캣 세션을 사용한다
+- 일반적으로 별다른 설정을 하지 않을 때 기본적으로 선택되는 방식이다. 이렇게 될 경우 톰캣(WAS)에 세션이 저장되기 때문에 2대 이상의 WAS가
+구동되는 환경에서는 톰캣들 간의 세션 공유를 위한 추가 설정이 필요하다.
+2. MySQL과 같은 데이터베이스를 세션 저장소로 사용한다.
+- 여러 WAS간의 공용 세션을 사용할 수 있는 가장 쉬운 방법이다. 많은 설정이 필요 없지만, 결국 로그인 요청마다 DB IO가 발생하여 성능상 이슈가
+발생할 수 있다. 보통 로그인 요청이 많이 없는 백오피스, 사내 시스템 용도에서 사용한다.
+3. Redis, Memcached와 같은 메모리 DB를 세션 저장소로 사용한다. 
+- B2C 서비스에서 가장 많이 사용하는 방식이다. 실제 서비스로 사용하기 위해서는 Embedded Redis와 같은 방식이 아닌 외부 메모리 서버가 필요하다.
+
+여기서는 두 번째 방식인 데이터베이스를 세션 저장소로 사용하는 방식을 선택하여 진행하겠다. 이유는 설정이 간단하고 사용자가 많은 서비스가 아니며
+비용 절감을 하기 위해서다. 이후 AWS에서 이 서비스를 배포하고 운영할 때를 생각하면 레디스와 같은 메모리DB를 사용하기는 부담스럽다. 왜냐하면
+레디스와 같은 서비스(엘라스틱 캐시)에 별도로 사용료를 지불해야 하기 때문이다. 먼저 build.gradle에 의존성(spring-session-jdbc)을 등록한다.
+(202페이지). 이렇게 세션 저장소를 데이터베이스로 교체했다. 물론 지금은 기존과 동일하게 스프링을 재시작하면 세션이 풀린다. 이유는 H2 기반으로
+스프링이 재실행될 때 H2도 재시작되기 때문이다. 이후 AWS로 배포하게 되면 AWS의 데이터베이스 서비스인 RDS(Relational Database Service)를
+사용하게 되니 이때부터는 세션이 풀리지 않는다.  
+
 
 클래스
 
@@ -454,6 +475,8 @@ posts로 index.mustache에 전달한다.
 SessionUser를 저장하도록 구성했다. 즉 로그인 성공 시 httpSession.getAttribute("user")에서 값을 가져올 수 있다.
 - if(user != null) -> 세션에 저장된 값이 있을 때만 model에 userName으로 등록한다. 세션에 저장된 값이 없으면 model엔 
 아무런 값이 없는 상태이니 로그인 버튼이 보이게 된다.
+- @LoginUser SessionUser user -> 기존에 (User) httpSession.getAttribute("user")로 가져오던 세션 정보 값이 개선되었다.
+이제는 어느 컨트롤러든지 @LoginUser만 사용하면 세션 정보를 가져올 수 있게 되었다.
 
 header.mustache, footer.mustache 
 코드를 보면 css와 js의 위치가 서로 다르다. 페이지 로딩속도를 높이기 위해 css는 header에, js는 footer에 두었다. html은 위에서부터
@@ -540,7 +563,23 @@ OAuthAttributes
 SessionUser
 SessionUser에는 인증된 사용자 정보만 필요하다. 그 외에 필요한 정보들은 없으니, name, email, picture만 필드로 선언한다.
 
+LoginUSer 어노테이션
+- @Target(ElementType.PARAMETER) -> 이 어노테이션이 생성될 수 있는 위치를 지정한다. PARAMETER로 지정했으니 메서드의 파라미터로
+선언된 객체에서만 사용할 수 있다. 이 외에도 클래스 선언문에 쓸 수 있는 TYPE 등이 있다.
+- @Retention(RetentionPolicy.RUNTIME) -> Retention어노테이션은 어노테이션 타입을 어디까지 보유할지를 설정하는 것
+1. SOURCE : 어노테이션을 사실상 주석처럼 사용하는 것. 컴파일러가 컴파일할때 해당 어노테이션의 메모리를 버린다.
+2. CLASS : 컴파일러가 컴파일에서는 어노테이션의 메모리를 가져가지만 실질적으로 런타임시에는 사라지게 된다. 런타임시에 사라진다는
+것은 리플렉션으로 선언된 어노테이션 데이터를 가져올 수 없게 된다. 디폴트값이다.
+3. RUNTIME : 어노테이션을 런타임시에까지 사용할 수 있다. JVM이 자바 바이트코드가 담긴 class 파일에서 런타임환경을 구성하고
+런타임을 종료할 때까지 메모리는 살아있다.
+- @interface -> 이 파일을 어노테이션 클래스로 지정한다. LoginUser라는 이름을 가진 어노테이션이 생성되었다고 보면 된다.
 
+LoginUserArgumentResolver
+LoginUserArgumentResolver는 HandlerMethodArgumentResolver 인터페이스를 구현한 클래스이다. 이 인터페이스는 한가지 기능을 지원한다.
+바로 조건에 맞는 경우 메서드가 있다면 HandlerMethodArgumentResolver의 구현체가 지정한 값으로 해당 메서드의 파라미터로 넘길 수 있다.
+- supportsParameter() -> 컨트롤러 메서드의 특정 파라미터를 지원하는지 판단한다. 여기서는 파라미터에 @LoginUser 어노테이션이 붙어 있고,
+파라미터 클래스 타입이 SessionUser.class인 경우 true를 반환한다.
+- resolveAugument() -> 파라미터에 전달할 객체를 생성한다. 여기서는 세션에서 객체를 가져온다
 
 참조 
 - [https://www.redhat.com/ko/topics/api/what-is-a-rest-api]
