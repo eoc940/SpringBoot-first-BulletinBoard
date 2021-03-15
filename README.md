@@ -418,6 +418,7 @@ sql 쿼리를 확인할 수 있다. 직접 확인해보면 create table 쿼리�
 
 MySQL 쿼리를 수행해도 정상적으로 작동하기 때문에 이후 디버깅을 위해 출력되는 쿼릴 로그를 MySQL 버전으로 변경해 보겠다.
 applicaiton.properties에 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+applicaiton.properties에 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
 
 PostsApiController 클래스
 - @RequestBody란 클라이언트가 전송하는 Http 요청의 Body 내용을 java object로 변환시켜주는 역할을 한다.
@@ -499,6 +500,8 @@ index.mustache
 노출시키도록 구성했다. 
 - a href="/oauth2/authorization/google" -> 스프링 시큐리티에서 기본적으로 제공하는 로그인 URL이다. 로그아웃 URL과 마찬가지로
 개발자가 별도의 컨트롤러를 생성할 필요가 없다.
+- /oauth2/authorization/naver -> 네이버 로그인 URL은 application-oauth.properties에 등록한 redirect-uri 값에 맞춰 자동으로 등록된다.
+/oauth2/authorization/ 까지는 고정이고 마지막 Path만 각 소셜 로그인 코드를 사용하면 된다. 여기서는 naver가 마지막 Path가 된다.
                     
 index.js
 - window.location.href = '/' -> 글 등록이 성공하면 메인페이지(/)로 이동한다.
