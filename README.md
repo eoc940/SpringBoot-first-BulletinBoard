@@ -294,6 +294,23 @@ resource에 application-oauth.properties파일을 만들고 코드를 등록한�
 스프링이 재실행될 때 H2도 재시작되기 때문이다. 이후 AWS로 배포하게 되면 AWS의 데이터베이스 서비스인 RDS(Relational Database Service)를
 사용하게 되니 이때부터는 세션이 풀리지 않는다.  
 
+기존 테스트에 시큐리티 적용하기
+기존에는 바로 API를 호출할 수 있어 테스트 코드 역시 바로 API를 호출하도록 구성하였습니다. 하지만, 시큐리티 옵션이 활성화되면 인증된 사용자만
+API를 호출할 수 있습니다. 기존의 API 테스트 코드들이 모두 인증에 대한 권한을 받지 못하였으므로, 테스트 코드마다 인증한 사용자가 호출한 것처럼
+작동하도록 수정하겠습니다. 인텔리제이 우측상단 Gradle 탭 클릭 -> tasks -> verification -> test를 차례로 선택해서 전체 테스트를 수행한다.
+test를 실행해 보면 롬복을 이용한 테스트 외에 스프링을 이용한 테스트는 모두 실패하는 것을 확인할 수 있다.
+문제1 - CustomOAuth2UserService를 찾을 수 없음
+첫 번째 실패 테스트인 "hello가_리턴된다"의 메시지를 보면 이는 CustomOAuth2UserService를 생성하는데 필요한 소셜 로그인 관련 설정값들이
+없기 때문에 발생한다. 분명 application-oauth.properties에 설정값들을 추가했는데 왜 설정이 없다고 할까?
+이는 src/main환경과 src/test 환경의 차이 때문이다. 둘은 본인만의 환경 구성을 가진다. 이는 src/main환경과 src/test 환경의 차이 때문이다.
+다만 src/main/resources/application.properties가 테스트 코드를 수행할 때도 적용되는 이유는 test에 application.properties가 없으면
+main의 설정을 그대로 가져오기 때문이다. 다만 자동으로 가져오는 옵션의 범위는 application.properties파일까지이다. 
+즉 application-oauth.properties는 test에 파일이 없다고 가져오는 파일은 아니라는 점이다. 이 문제를 해결하기 위해 테스트 환경을 위한
+application.properties를 만들겠다. 실제 구글 연동까지 진행할 건 아니므로 가짜 설정값을 등록한다. 그 후 테스트를 진행해 보고
+"Posts_등록된다" 테스트 로그를 확인해 보자. 응답의 결과로 200(정상 응답)Status Code를 원했는데 결과는 302(리다이렉션 응답) Status Code가
+와서 실패했습니다. 이는 스프링 시큐리티 설정 때문에 인증되지 않은 사용자의 요청은 이동시키기 때문이다. 그래서 이런 API요청은 임의로 인증된 사용자를 
+추가하여 API만 테스트해 볼 수 있게 하겠습니다. 스프링 시큐리티 테스트를 위한 여러 도구를 지원하는 spring-security-test를 build.gradle에 추가한다.
+
 
 클래스
 
@@ -424,6 +441,8 @@ PostsApiController 클래스
 - @RequestBody란 클라이언트가 전송하는 Http 요청의 Body 내용을 java object로 변환시켜주는 역할을 한다.
 그래서 Body가 존재하지 않는 Get 방식의 메서드에 @RequestBody를 활용하는 것은 적합하지 않으므로
 에러가 발생한다. 즉 Post방식으로 Json의 형태로 넘어온 데이터를 객체로 바인딩하기 위해 사용할 수 있다.
+- @WithMockUser(roles="USER") -> 인증된 모의 사용자를 만들어 사용한다, roles에 권한을 추가할 수 있다,
+즉, 이 어노테이션으로 인해 ROLE_USER 권한을 가진 사용자가 API를 요청하는 것과 동일한 효과를 가지게 된다.
 
 PostsService 클래스
 - @Transactional -> 데이터 삽입 프로세스를 진행하던 중 에러가 발생하면 기존에 삽입이 이미 이루어진 데이터들도 다시 롤백이 되어야 한다.
