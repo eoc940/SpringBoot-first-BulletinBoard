@@ -1,6 +1,6 @@
 # SpringBoot-Projects
 
-<h3>본 저장소는 [스프링 부트와 AWS로 혼자 구현하는 웹 서비스 저자:이동욱]도서의 학습 내용을 저장하는 공간입니다</h3>
+## 이 저장소는 [스프링 부트와 AWS로 혼자 구현하는 웹 서비스 저자:이동욱]도서의 학습 내용을 저장하는 공간입니다
 
 SpringBoot 프로젝트 만들기 순서
 1. springboot-projects 폴더 안에 프로젝트 이름으로 폴더 생성
@@ -509,7 +509,7 @@ header.mustache, footer.mustache
 bootstrap.js가 제이쿼리에 의존한다고 한다. 라이브러리를 비롯해 기타 html 태그들이 모두 레이아웃에 추가되니 이제 index.mustache에는
 필요한 코드만 남게 됩니다. index.mustache의 코드는 다음과 같이 변경된다.
 {{>layout/header}} -------> {{> }}는 현재 머스테치 파일(index.mustache)을 기준으로 다른 파일을 가져온다.
-"<h1>스프링 부트로 시작하는 웹 서비스</h1>"
+....
 {{>layout/footer}}
 
 index.mustache
